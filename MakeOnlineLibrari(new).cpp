@@ -3,7 +3,6 @@
 #include <string>
 #include <limits>
 #include <iomanip>
-#include <conio.h>
 
 using namespace std;
 
@@ -68,14 +67,17 @@ class Book
 private:
     string title;
     int price;
+    string categorie;
 
 public:
     // Setter
-    void setTitle(string Title) { title = Title; }
-    void setPrice(int Price) { price = Price; }
+    void setTitle(string title) { this->title = title; }
+    void setCategorie(string categorie) { this->categorie = categorie; }
+    void setPrice(int price) { this->price = price; }
     // Getter
-    string getTitle() { return title; }
-    int getPrice() { return price; }
+    string getTitle() const { return title; }
+    string getCategorie() const { return categorie; }
+    int getPrice() const { return price; }
 };
 
 Book books[200];
@@ -92,11 +94,15 @@ void decrement()
 }
 
 void Filebook(int counter);
+void Accessbooks(int counter);
 void addbook(int &counter);
 void editbook(int &counter);
 void deletebook(int &counter);
 void searchbook(int counter);
 void viewall(int counter);
+void Catgorielist();
+void choosecategorie(int choice);
+void searchbyCategorie(int counter);
 
 int main()
 {
@@ -121,8 +127,9 @@ int main()
             {
                 cout << "1. Find book by name" << endl;
                 cout << "2. View all books" << endl;
-                cout << "3. Change account" << endl;
-                cout << "4. Exit" << endl;
+                cout << "3. Search by categorie" << endl;
+                cout << "4. Change account" << endl;
+                cout << "5. Exit" << endl;
                 cout << "Enter choice: ";
                 cin >> choice;
 
@@ -133,12 +140,16 @@ int main()
                     break;
                 case 2:
                     viewall(counter);
+
                     break;
                 case 3:
+                    searchbyCategorie(counter);
+                    break;
+                case 4:
                     reader1.changeAccount();
                     break;
                 }
-            } while (choice != 4);
+            } while (choice != 5);
             break;
 
         case 2:
@@ -185,34 +196,85 @@ void Filebook(int counter)
     file3.open("Book.txt", ios_base::out);
     for (int i = 0; i < counter; i++)
     {
-        file3 << books[i].getTitle();
-        file3 << setw(15) << right << books[i].getPrice() << "$" << endl;
+        file3 << books[i].getTitle() << endl;
+        file3 << books[i].getPrice() << endl;
+        file3 << books[i].getCategorie() << endl;
     }
     file3.close();
+}
+
+void Catgorielist()
+{
+    cout << "1.Ngon tinh" << endl;
+    cout << "2.Tieu thuyet" << endl;
+    cout << "3.Van hoc lich su" << endl;
+    cout << "4.Van hoc nuoc ngoai" << endl;
+    cout << "5.Khac" << endl;
+}
+
+string chooseCategorie(int choice)
+{
+    switch (choice)
+    {
+    case 1:
+        return "Ngon tinh";
+
+    case 2:
+        return "Tieu thuyet";
+
+    case 3:
+        return "Van hoc lich su";
+
+    case 4:
+        return "Van hoc nuoc ngoai";
+    case 5:
+        return "Khac";
+    default:
+        return "Khac";
+    }
 }
 
 void addbook(int &counter)
 {
     string title;
     int price;
+    int catego = 0; // Initialize to avoid undefined behavior
+
     if (counter < 200)
     {
         cin.ignore();
         cout << "Book title: ";
         getline(cin, title);
+
         cout << "Rental price: ";
         cin >> price;
         while (cin.fail() || price < 0)
         {
             cin.clear();
-            cout << "Please enter valid price: ";
-            cin.ignore();
+            cout << "Please enter a valid price: ";
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cin >> price;
         }
+
+        Catgorielist();
+        cout << "Choose the category for the book. Enter choice: ";
+        cin >> catego;
+        while (catego < 1 || catego > 5)
+        {
+            cin.clear();
+            cout << "Invalid choice. Please enter a number between 1 and 5: ";
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cin >> catego;
+        }
+        string categor = chooseCategorie(catego);
+
         books[counter].setTitle(title);
         books[counter].setPrice(price);
+        books[counter].setCategorie(categor);
+
         increment();
         Filebook(counter);
+        cout << "Book added successfully!" << endl;
     }
     else
     {
@@ -224,6 +286,7 @@ void editbook(int &counter)
 {
     string title;
     int price;
+    int catego;
     bool print = false;
     if (counter == 0)
     {
@@ -238,6 +301,7 @@ void editbook(int &counter)
         {
             if (books[i].getTitle() == title)
             {
+                print = true;
                 cout << "Enter new name: ";
                 getline(cin, title);
                 cout << "New rental price: ";
@@ -246,12 +310,27 @@ void editbook(int &counter)
                 {
                     cout << "Please enter valid price: ";
                     cin.clear();
-                    cin.ignore();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     cin >> price;
                 }
+
+                cout << "Tag new categorie" << endl;
+                Catgorielist();
+                cout << "Enter choice: ";
+                cin >> catego;
+                while (catego < 1 || catego > 5)
+                {
+                    cin.clear();
+                    cout << "Invalid choice. Please enter a number between 1 and 5: ";
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cin >> catego;
+                }
+                string categor = chooseCategorie(catego);
+
                 books[i].setTitle(title);
                 books[i].setPrice(price);
-                print = true;
+                books[i].setCategorie(categor);
+                cout << "Book updated successfully!\n";
             }
         }
         Filebook(counter);
@@ -286,6 +365,7 @@ void deletebook(int &counter)
                 }
                 decrement();
                 Filebook(counter);
+                break;
             }
         }
         if (!print)
@@ -324,6 +404,43 @@ void searchbook(int counter)
     }
 }
 
+void searchbyCategorie(int counter)
+{
+    int catego;
+    bool print = false;
+    if (counter == 0)
+    {
+        cout << "Library is empty." << endl;
+    }
+    else
+    {
+        Catgorielist();
+        cout << "Enter choice: ";
+        cin >> catego;
+        while (catego < 1 || catego > 5)
+        {
+            cin.clear();
+            cout << "Invalid choice. Please enter a number between 1 and 5: ";
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cin >> catego;
+        }
+        string categor = chooseCategorie(catego);
+        for (int i = 0; i < counter; i++)
+        {
+            if (books[i].getCategorie() == categor)
+            {
+                print = true;
+                cout << books[i].getTitle();
+                cout << setw(15) << right << books[i].getPrice() << "$" << endl;
+            }
+        }
+        if (!print)
+        {
+            cout << "Book not found." << endl;
+        }
+    }
+}
+
 void viewall(int counter)
 {
     if (counter == 0)
@@ -335,7 +452,7 @@ void viewall(int counter)
         for (int i = 0; i < counter; i++)
         {
             cout << books[i].getTitle();
-            cout << setw(15) << right << books[i].getPrice() << "$" << endl;
+            cout << setw(20) << right << books[i].getPrice() << "$" << endl;
         }
     }
 }
