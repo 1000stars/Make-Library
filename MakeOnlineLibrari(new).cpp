@@ -19,15 +19,18 @@ public:
         cout << "Name: ";
         getline(cin, name);
         cout << "Phone Number: ";
-        cin >> pn;
-        cout << "ID: ";
-        cin >> id;
-        while (cin.fail() || id < 0)
+        while (!(cin >> pn) || pn < 0)
         {
-            cout << "Please enter valid ID: ";
+            cout << "Please enter a valid phone number: ";
             cin.clear();
-            cin.ignore();
-            cin >> id;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+        cout << "ID: ";
+        while (!(cin >> id) || id < 0)
+        {
+            cout << "Please enter a valid ID: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
         ofstream file1("Reader.txt", ios_base::app);
         file1 << "Name: " << name << endl;
@@ -78,7 +81,27 @@ public:
     string getTitle() const { return title; }
     string getCategorie() const { return categorie; }
     int getPrice() const { return price; }
+
+    void write(ofstream &outFile);
+    void read(ifstream &inFile);
 };
+
+void Book::write(ofstream &outFile)
+{
+    outFile.write(title.c_str(), sizeof(title));
+    outFile.write(categorie.c_str(), sizeof(categorie));
+    outFile.write(reinterpret_cast<char *>(&price), sizeof(price));
+}
+
+void Book::read(ifstream &inFile)
+{
+    char buffer[50];
+    inFile.read(buffer, sizeof(title));
+    title = buffer;
+    inFile.read(buffer, sizeof(categorie));
+    categorie = buffer;
+    inFile.read(reinterpret_cast<char *>(&price), sizeof(price));
+}
 
 Book books[200];
 int counter = 0;
@@ -93,8 +116,8 @@ void decrement()
     counter--;
 }
 
-void Filebook(int counter);
-void Accessbooks(int counter);
+void writeTofile();
+void readFromfile();
 void addbook(int &counter);
 void editbook(int &counter);
 void deletebook(int &counter);
@@ -110,9 +133,10 @@ int main()
     char x;
     Author author1;
     Reader reader1;
-
+    readFromfile();
     do
     {
+
         cout << "-----Online library-----" << endl;
         cout << "1. Reader" << endl;
         cout << "2. Author" << endl;
@@ -190,19 +214,6 @@ int main()
     return 0;
 }
 
-void Filebook(int counter)
-{
-    ofstream file3;
-    file3.open("Book.txt", ios_base::out);
-    for (int i = 0; i < counter; i++)
-    {
-        file3 << books[i].getTitle() << endl;
-        file3 << books[i].getPrice() << endl;
-        file3 << books[i].getCategorie() << endl;
-    }
-    file3.close();
-}
-
 void Catgorielist()
 {
     cout << "1.Ngon tinh" << endl;
@@ -231,6 +242,40 @@ string chooseCategorie(int choice)
         return "Khac";
     default:
         return "Khac";
+    }
+}
+
+void writeTofile()
+{
+    ofstream file;
+    file.open("Book.txt", ios::app | ios::binary);
+    if (!file.is_open())
+    {
+        cout << "Error opening file for writing." << endl;
+        return;
+    }
+    books[counter].write(file);
+
+    file.close();
+}
+
+void readFromfile()
+{
+    ifstream file;
+    file.open("Book.txt", ios::in | ios::binary);
+    if (!file.is_open())
+    {
+        cout << "Error opening file for reading." << endl;
+        return;
+    }
+    else
+    {
+        while (!file.eof())
+        {
+            books[counter].read(file);
+            increment();
+        }
+        decrement();
     }
 }
 
@@ -268,12 +313,12 @@ void addbook(int &counter)
         }
         string categor = chooseCategorie(catego);
 
+        increment();
         books[counter].setTitle(title);
         books[counter].setPrice(price);
         books[counter].setCategorie(categor);
+        writeTofile();
 
-        increment();
-        Filebook(counter);
         cout << "Book added successfully!" << endl;
     }
     else
@@ -330,10 +375,11 @@ void editbook(int &counter)
                 books[i].setTitle(title);
                 books[i].setPrice(price);
                 books[i].setCategorie(categor);
+                writeTofile();
                 cout << "Book updated successfully!\n";
             }
         }
-        Filebook(counter);
+
         if (!print)
         {
             cout << "Book not found." << endl;
@@ -364,7 +410,8 @@ void deletebook(int &counter)
                     books[a] = books[a + 1];
                 }
                 decrement();
-                Filebook(counter);
+                writeTofile();
+
                 break;
             }
         }
